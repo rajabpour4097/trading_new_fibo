@@ -314,23 +314,26 @@ def main():
                         log(f' ' * 80)
                         
                         # فاز 1: تشخیص اولیه/تعویض swing و ساخت fib از swing جدید
-                        if is_swing:
+                        if is_swing and (state.fib_levels is None or last_swing_type != swing_type):
                             row = cache_data.iloc[-1]
                             end_price_ref = legs[1]['end_value'] if len(legs) >= 2 else None
-                            if state.fib_levels is None or last_swing_type != swing_type:
-                                # هر swing جدید => fib قبلی حذف و از نو ساخته شود (در صورت برآورده شدن گیت)
-                                new_fib = _init_fib_from_swing(swing_type, legs, row)
-                                if new_fib:
-                                    last_swing_type = swing_type
-                                    state.fib_levels = new_fib
-                                    fib0_point = cache_data.index.tolist().index(row.name)
-                                    fib_index = row.name
-                                    last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
-                                    legs = legs[-2:]
-                                    f += 1
-                                    log(f'Fib initialized/reset for new swing -> {swing_type} | {row.name}', color='green')
-                                    log(f'fib_levels: {state.fib_levels}', color='yellow')
-                                    log(f'fib_index: {fib_index}', color='yellow')
+                            # هر swing جدید => fib قبلی حذف و از نو ساخته شود (در صورت برآورده شدن گیت)
+                            new_fib = _init_fib_from_swing(swing_type, legs, row)
+                            if new_fib:
+                                last_swing_type = swing_type
+                                state.fib_levels = new_fib
+                                # reset first-touch state on (re)build
+                                state.last_touched_705_point_up = None
+                                state.last_touched_705_point_down = None
+                                state.true_position = False
+                                fib0_point = cache_data.index.tolist().index(row.name)
+                                fib_index = row.name
+                                last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
+                                legs = legs[-2:]
+                                f += 1
+                                log(f'Fib initialized/reset for new swing -> {swing_type} | {row.name}', color='green')
+                                log(f'fib_levels: {state.fib_levels}', color='yellow')
+                                log(f'fib_index: {fib_index}', color='yellow')
 
                         # فاز 2: در swing مشابه - آپدیت 0.0 در صورت ثبت سقف/کف جدید + لاجیک لمس‌ها
                         elif is_swing and state.fib_levels and last_swing_type == swing_type:
@@ -341,6 +344,10 @@ def main():
                             new_fib = _update_fib0_if_extends(swing_type, state.fib_levels, row, end_price_ref)
                             if new_fib is not state.fib_levels:
                                 state.fib_levels = new_fib
+                                # reset first-touch state on 0.0 update
+                                state.last_touched_705_point_up = None
+                                state.last_touched_705_point_down = None
+                                state.true_position = False
                                 fib0_point = cache_data.index.tolist().index(row.name)
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else last_leg1_value
@@ -381,6 +388,8 @@ def main():
                             if new_fib:
                                 last_swing_type = swing_type
                                 state.fib_levels = new_fib
+                                # touches already cleared by state.reset(); ensure position flag reset
+                                state.true_position = False
                                 fib0_point = cache_data.index.tolist().index(row.name)
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
@@ -394,15 +403,21 @@ def main():
                             # خارج از حالت swing هم در صورت ثبت سقف/کف جدید 0.0 آپدیت شود (اگر leg1 موجود باشد)
                             row = cache_data.iloc[-1]
                             end_price_ref = legs[1]['end_value'] if len(legs) >= 2 else None
-                            state.fib_levels = _update_fib0_if_extends(last_swing_type or swing_type, state.fib_levels, row, end_price_ref)
+                            maybe_new = _update_fib0_if_extends(last_swing_type or swing_type, state.fib_levels, row, end_price_ref)
+                            if maybe_new is not state.fib_levels:
+                                state.fib_levels = maybe_new
+                                # reset first-touch state on 0.0 update
+                                state.last_touched_705_point_up = None
+                                state.last_touched_705_point_down = None
+                                state.true_position = False
                             # لمس‌ها و گارد 1.0 مانند بالا
                             if last_swing_type == 'bullish' or swing_type == 'bullish':
                                 if row['low'] <= state.fib_levels.get('0.705', float('inf')):
                                     if state.last_touched_705_point_up is None:
-                                        log(f'first touch 705 point code:7318455', color='green')
+                                        log(f'first touch 705 point at {row.name} price={row["low"]}', color='green')
                                         state.last_touched_705_point_up = row
                                     elif row['status'] != state.last_touched_705_point_up['status']:
-                                        log(f'Second touch 705 point code:7218455 {row.name}', color='green')
+                                        log(f'Second touch 705 point at {row.name} price={row["low"]}', color='green')
                                         state.true_position = True
                                 elif state.fib_levels and row['low'] < state.fib_levels.get('1.0', -float('inf')):
                                     reset_state_and_window()
@@ -427,10 +442,10 @@ def main():
                         if last_swing_type == 'bullish' or swing_type == 'bullish':
                             if row['low'] <= state.fib_levels.get('0.705', float('inf')):
                                 if state.last_touched_705_point_up is None:
-                                    log(f'first touch 705 point', color='green')
+                                    log(f'first touch 705 point at {row.name} price={row["low"]}', color='green')
                                     state.last_touched_705_point_up = row
                                 elif row['status'] != state.last_touched_705_point_up['status']:
-                                    log(f'Second touch 705 point code:4118455 {row.name}', color='green')
+                                    log(f'Second touch 705 point at {row.name} price={row["low"]}', color='green')
                                     state.true_position = True
                         if last_swing_type == 'bearish' or swing_type == 'bearish':
                             if row['high'] >= state.fib_levels.get('0.705', -float('inf')):
