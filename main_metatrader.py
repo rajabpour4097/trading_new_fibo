@@ -35,7 +35,7 @@ def main():
     min_swing_size = TRADING_CONFIG['min_swing_size']
 
     i = 1
-    f = 1
+    f = 0
     position_open = False
     last_swing_type = None
     fib_index = None
@@ -68,8 +68,9 @@ def main():
 
     # بعد از تعریف متغیرها در main()
     def reset_state_and_window():
-        nonlocal start_index
+        nonlocal start_index, f
         state.reset()
+        f = 0
         start_index = max(0, len(cache_data) - window_size)
         log(f'Reset state -> new start_index={start_index} (slice len={len(cache_data.iloc[start_index:])})', color='magenta')
 
@@ -335,7 +336,8 @@ def main():
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
                                 legs = legs[-2:]
-                                f += 1
+                                # Reset fib update counter on (re)initialization
+                                f = 0
                                 log(f'Fib initialized/reset for new swing -> {swing_type} | {row.name}', color='green')
                                 log(f'fib_levels: {state.fib_levels}', color='yellow')
                                 log(f'fib_index: {fib_index}', color='yellow')
@@ -358,6 +360,7 @@ def main():
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else last_leg1_value
                                 legs = legs[-2:]
+                                # Count only extensions within the same swing
                                 f += 1
                                 log(f'Fib 0.0 updated (extend) at {row.name}', color='green')
                             # لمس 0.705 و گارد 1.0
@@ -403,7 +406,8 @@ def main():
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
                                 legs = legs[-2:]
-                                f += 1
+                                # Reset counter on re-initialization due to opposite swing
+                                f = 0
                                 log(f'Fib re-initialized for opposite swing -> {swing_type} | {row.name}', color='green')
                                 log(f'fib_levels: {state.fib_levels}', color='yellow')
                                 log(f'fib_index: {fib_index}', color='yellow')
@@ -420,6 +424,8 @@ def main():
                                 state.last_touched_705_point_down = None
                                 state.true_position = False
                                 state.fib0_last_update_time = row.name
+                                # Count extension outside swing as well (same swing context)
+                                f += 1
                             # لمس‌ها و گارد 1.0 مانند بالا
                             if last_swing_type == 'bullish' or swing_type == 'bullish':
                                 if row['low'] <= state.fib_levels.get('0.705', float('inf')):

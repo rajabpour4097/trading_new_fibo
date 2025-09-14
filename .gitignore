@@ -8,6 +8,6 @@ env/
 
 __pycache__/
 
-swing_logs.txt
+swing_logs_*.txt
 
 email_config.py
