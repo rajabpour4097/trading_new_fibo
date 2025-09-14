@@ -326,6 +326,11 @@ def main():
                                 state.last_touched_705_point_up = None
                                 state.last_touched_705_point_down = None
                                 state.true_position = False
+                                # track fib timings/anchors
+                                state.fib_built_time = row.name
+                                state.fib0_last_update_time = row.name
+                                state.fib1_time = legs[1]['end'] if len(legs) >= 2 else None
+                                state.fib1_price = legs[1]['end_value'] if len(legs) >= 2 else None
                                 fib0_point = cache_data.index.tolist().index(row.name)
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
@@ -348,6 +353,7 @@ def main():
                                 state.last_touched_705_point_up = None
                                 state.last_touched_705_point_down = None
                                 state.true_position = False
+                                state.fib0_last_update_time = row.name
                                 fib0_point = cache_data.index.tolist().index(row.name)
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else last_leg1_value
@@ -363,6 +369,8 @@ def main():
                                     elif row['status'] != state.last_touched_705_point_up['status']:
                                         log(f'Second touch 705 point code:7218455 {row.name}', color='green')
                                         state.true_position = True
+                                        # track second touch
+                                        state.last_second_touch_705_point_up = row
                                 elif state.fib_levels and row['low'] < state.fib_levels['1.0']:
                                     reset_state_and_window()
                                     legs = []
@@ -374,6 +382,7 @@ def main():
                                     elif row['status'] != state.last_touched_705_point_down['status']:
                                         log(f'Second touch 705 point code:6228455 {row.name}', color='green')
                                         state.true_position = True
+                                        state.last_second_touch_705_point_down = row
                                 elif state.fib_levels and row['high'] > state.fib_levels['1.0']:
                                     reset_state_and_window()
                                     legs = []
@@ -410,6 +419,7 @@ def main():
                                 state.last_touched_705_point_up = None
                                 state.last_touched_705_point_down = None
                                 state.true_position = False
+                                state.fib0_last_update_time = row.name
                             # لمس‌ها و گارد 1.0 مانند بالا
                             if last_swing_type == 'bullish' or swing_type == 'bullish':
                                 if row['low'] <= state.fib_levels.get('0.705', float('inf')):
@@ -419,6 +429,7 @@ def main():
                                     elif row['status'] != state.last_touched_705_point_up['status']:
                                         log(f'Second touch 705 point at {row.name} price={row["low"]}', color='green')
                                         state.true_position = True
+                                        state.last_second_touch_705_point_up = row
                                 elif state.fib_levels and row['low'] < state.fib_levels.get('1.0', -float('inf')):
                                     reset_state_and_window()
                                     legs = []
@@ -430,6 +441,7 @@ def main():
                                     elif row['status'] != state.last_touched_705_point_down['status']:
                                         log(f'Second touch 705 point code:6228455 {row.name}', color='green')
                                         state.true_position = True
+                                        state.last_second_touch_705_point_down = row
                                 elif state.fib_levels and row['high'] > state.fib_levels.get('1.0', float('inf')):
                                     reset_state_and_window()
                                     legs = []
@@ -485,6 +497,23 @@ def main():
                     # current_open_point = cache_data.iloc[-1]['close']
                     log(f'Start long position income {cache_data.iloc[-1].name}', color='blue')
                     log(f'current_open_point (market ask): {buy_entry_price}', color='blue')
+                    # ENTRY CONTEXT (BUY): fib snapshot + touches
+                    try:
+                        fib = state.fib_levels or {}
+                        fib0_p = fib.get('0.0')
+                        fib1_p = fib.get('1.0')
+                        log(
+                            f"ENTRY_CTX_BUY | fib0={fib0_p} t0={state.fib0_last_update_time} | fib705={fib.get('0.705')} | fib09={fib.get('0.9')} | fib1={fib1_p} t1={state.fib1_time}",
+                            color='cyan'
+                        )
+                        if state.last_touched_705_point_up is not None:
+                            lt = state.last_touched_705_point_up
+                            log(f"ENTRY_CTX_BUY | first_touch_705_up t={lt.name} price={lt['low']}", color='cyan')
+                        if hasattr(state, 'last_second_touch_705_point_up') and state.last_second_touch_705_point_up is not None:
+                            stp = state.last_second_touch_705_point_up
+                            log(f"ENTRY_CTX_BUY | second_touch_705_up t={stp.name} price={stp['low']}", color='cyan')
+                    except Exception:
+                        pass
 
                     pip_size = _pip_size_for(MT5_CONFIG['symbol'])
                     two_pips = 2.0 * pip_size
@@ -597,6 +626,23 @@ def main():
                         pass
                     log(f'Start short position income {cache_data.iloc[-1].name}', color='red')
                     log(f'current_open_point (market bid): {sell_entry_price}', color='red')
+                    # ENTRY CONTEXT (SELL): fib snapshot + touches
+                    try:
+                        fib = state.fib_levels or {}
+                        fib0_p = fib.get('0.0')
+                        fib1_p = fib.get('1.0')
+                        log(
+                            f"ENTRY_CTX_SELL | fib0={fib0_p} t0={state.fib0_last_update_time} | fib705={fib.get('0.705')} | fib09={fib.get('0.9')} | fib1={fib1_p} t1={state.fib1_time}",
+                            color='cyan'
+                        )
+                        if state.last_touched_705_point_down is not None:
+                            lt = state.last_touched_705_point_down
+                            log(f"ENTRY_CTX_SELL | first_touch_705_down t={lt.name} price={lt['high']}", color='cyan')
+                        if hasattr(state, 'last_second_touch_705_point_down') and state.last_second_touch_705_point_down is not None:
+                            stp = state.last_second_touch_705_point_down
+                            log(f"ENTRY_CTX_SELL | second_touch_705_down t={stp.name} price={stp['high']}", color='cyan')
+                    except Exception:
+                        pass
 
                     pip_size = _pip_size_for(MT5_CONFIG['symbol'])
                     two_pips = 2.0 * pip_size
