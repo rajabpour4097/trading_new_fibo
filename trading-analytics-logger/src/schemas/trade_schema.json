@@ -1,0 +1,27 @@
+import pandas as pd
+
+# ایجاد یک DataFrame برای ذخیره داده‌ها
+data = {
+    'timestamp': [],
+    'action': [],
+    'price': [],
+    'volume': [],
+    'profit_loss': [],
+    'market_conditions': [],
+}
+
+df = pd.DataFrame(data)
+
+# تابعی برای ذخیره‌سازی داده‌ها
+def log_trade(timestamp, action, price, volume, profit_loss, market_conditions):
+    global df
+    new_row = {
+        'timestamp': timestamp,
+        'action': action,
+        'price': price,
+        'volume': volume,
+        'profit_loss': profit_loss,
+        'market_conditions': market_conditions,
+    }
+    df = df.append(new_row, ignore_index=True)
+    df.to_csv('trading_data.csv', index=False)  # ذخیره‌سازی در فایل CSV

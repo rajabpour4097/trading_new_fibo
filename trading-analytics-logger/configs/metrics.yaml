@@ -1,0 +1,35 @@
+import pandas as pd
+from datetime import datetime
+
+# ایجاد یک DataFrame برای ذخیره‌سازی داده‌ها
+data = {
+    'timestamp': [],
+    'action': [],
+    'symbol': [],
+    'volume': [],
+    'entry_price': [],
+    'exit_price': [],
+    'profit': [],
+    'market_conditions': [],
+}
+
+df = pd.DataFrame(data)
+
+# تابعی برای ذخیره‌سازی داده‌ها
+def log_trade(action, symbol, volume, entry_price, exit_price, profit, market_conditions):
+    global df
+    new_row = {
+        'timestamp': datetime.now(),
+        'action': action,
+        'symbol': symbol,
+        'volume': volume,
+        'entry_price': entry_price,
+        'exit_price': exit_price,
+        'profit': profit,
+        'market_conditions': market_conditions,
+    }
+    df = df.append(new_row, ignore_index=True)
+    df.to_csv('trading_data.csv', index=False)  # ذخیره‌سازی در فایل CSV
+
+# مثال استفاده از تابع
+log_trade('buy', 'EURUSD', 0.01, 1.2000, 1.2050, 50, 'bullish trend')

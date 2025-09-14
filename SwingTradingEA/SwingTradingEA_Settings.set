@@ -1,0 +1,73 @@
+;+------------------------------------------------------------------+
+;|                                    SwingTradingEA Default Settings |
+;|                           تنظیمات پیش‌فرض برای Expert Advisor      |
+;+------------------------------------------------------------------+
+
+[Settings]
+; نام EA
+ExpertName=SwingTradingEA_Enhanced
+
+; پارامترهای معاملاتی
+InpLotSize=0.01
+InpWinRatio=1.2
+InpThreshold=6
+InpWindowSize=100
+InpMinSwingSize=4
+InpFib705=0.705
+InpFib90=0.9
+
+; مدیریت ریسک
+InpMaxRiskPercent=2.0
+InpMaxSpread=3.0
+InpEntryTolerance=2.0
+InpUseTrailingStop=0
+InpTrailingStopPips=10
+
+; تنظیمات زمانی
+InpStartTime=09:00
+InpEndTime=21:00
+InpTradeOnWeekends=0
+InpUseLondonSession=1
+InpUseNYSession=1
+InpUseOverlapOnly=0
+
+; تنظیمات EA
+InpMagicNumber=234000
+InpTradeComment=SwingEA
+InpShowInfo=1
+InpEnableAlerts=1
+InpSendEmails=0
+
+; نسخه‌های مختلف تنظیمات برای استراتژی‌های مختلف
+
+[Conservative_Settings]
+; تنظیمات محافظه‌کارانه
+InpLotSize=0.01
+InpWinRatio=1.5
+InpMaxRiskPercent=1.0
+InpUseTrailingStop=1
+InpUseOverlapOnly=1
+
+[Aggressive_Settings]
+; تنظیمات تهاجمی
+InpLotSize=0.05
+InpWinRatio=2.0
+InpMaxRiskPercent=3.0
+InpThreshold=4
+InpUseTrailingStop=1
+
+[Scalping_Settings]
+; تنظیمات اسکالپینگ
+InpLotSize=0.02
+InpWinRatio=1.0
+InpThreshold=3
+InpMaxRiskPercent=1.5
+InpUseOverlapOnly=1
+
+[Demo_Test_Settings]
+; تنظیمات برای تست در Demo
+InpLotSize=0.1
+InpWinRatio=1.2
+InpMaxRiskPercent=5.0
+InpShowInfo=1
+InpEnableAlerts=1

@@ -1,0 +1,13 @@
+venv/
+env/
+
+*.csv
+
+*.pyc
+*.pyo
+
+__pycache__/
+
+swing_logs.txt
+
+email_config.py

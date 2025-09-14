@@ -1,0 +1,30 @@
+import pandas as pd
+from datetime import datetime
+
+# لیست برای ذخیره اطلاعات
+data = []
+
+def log_trade(symbol, trade_type, volume, entry_price, exit_price, profit):
+    # جمع‌آوری اطلاعات
+    trade_info = {
+        "timestamp": datetime.now(),
+        "symbol": symbol,
+        "trade_type": trade_type,
+        "volume": volume,
+        "entry_price": entry_price,
+        "exit_price": exit_price,
+        "profit": profit
+    }
+    data.append(trade_info)
+
+# در انتهای برنامه یا در زمان مناسب، داده‌ها را در فایل CSV ذخیره کنید
+def save_to_csv():
+    df = pd.DataFrame(data)
+    df.to_csv('trading_data.csv', index=False)
+
+# مثال از نحوه استفاده
+log_trade("EURUSD", "buy", 0.01, 1.2000, 1.2050, 50)
+log_trade("EURUSD", "sell", 0.01, 1.2050, 1.2000, -50)
+
+# ذخیره‌سازی داده‌ها در فایل CSV
+save_to_csv()

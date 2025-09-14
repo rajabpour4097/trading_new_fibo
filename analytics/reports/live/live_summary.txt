@@ -1,0 +1,5 @@
+Trades: 1
+Win rate (% of >0 P/L): 100.0%
+Gross P/L: 10.00
+Average P/L per trade: 10.00
+Market rows: 1

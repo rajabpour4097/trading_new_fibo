@@ -1,0 +1,23 @@
+import pandas as pd
+from datetime import datetime
+
+# ایجاد یک DataFrame برای ذخیره داده‌ها
+columns = ['timestamp', 'action', 'symbol', 'volume', 'entry_price', 'exit_price', 'profit', 'market_conditions']
+trade_data = pd.DataFrame(columns=columns)
+
+def log_trade(action, symbol, volume, entry_price, exit_price, profit, market_conditions):
+    global trade_data
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    trade_data = trade_data.append({
+        'timestamp': timestamp,
+        'action': action,
+        'symbol': symbol,
+        'volume': volume,
+        'entry_price': entry_price,
+        'exit_price': exit_price,
+        'profit': profit,
+        'market_conditions': market_conditions
+    }, ignore_index=True)
+
+# مثال از استفاده
+log_trade('buy', 'EURUSD', 0.01, 1.2000, 1.2050, 5.0, 'bullish trend')

@@ -1,0 +1,24 @@
+import pandas as pd
+from datetime import datetime
+
+def save_trade_data(trade_data):
+    # ایجاد DataFrame از داده‌های معاملاتی
+    df = pd.DataFrame(trade_data)
+    
+    # ذخیره‌سازی در فایل CSV
+    df.to_csv('trading_data.csv', mode='a', header=False, index=False)
+
+# نمونه داده‌های معاملاتی
+trade_data = {
+    'timestamp': datetime.now(),
+    'symbol': 'EURUSD',
+    'action': 'buy',
+    'entry_price': 1.2000,
+    'exit_price': 1.2050,
+    'volume': 0.01,
+    'profit': 50.0,
+    'market_conditions': 'bullish'
+}
+
+# ذخیره‌سازی داده‌ها
+save_trade_data(trade_data)

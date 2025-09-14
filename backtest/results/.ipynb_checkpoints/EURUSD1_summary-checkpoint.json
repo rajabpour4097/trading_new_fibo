@@ -1,0 +1,20 @@
+{
+  "total_trades": 9859,
+  "wins": 3564,
+  "losses": 4818,
+  "timeouts": 1477,
+  "win_rate_pct": 36.15,
+  "net_R": -541.2,
+  "avg_R": -0.055,
+  "expectancy_R": -0.055,
+  "avg_win_R": 1.2,
+  "avg_loss_R": 1.0,
+  "payoff_ratio": 1.2,
+  "profit_factor": 0.888,
+  "max_drawdown_R": -550.6,
+  "net_profit_cash": -9972.85,
+  "return_pct": -99.73,
+  "max_drawdown_cash": -10648.1,
+  "max_win_streak": 8,
+  "max_loss_streak": 11
+}
