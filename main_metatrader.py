@@ -89,6 +89,9 @@ def main():
         """Create fib_levels for a detected swing. Returns dict or None if gating not satisfied."""
         if len(legs_list) < 2:
             return None
+        # Orientation contract per user:
+        # - bullish swing: 0.0 -> current candle HIGH, 1.0 -> leg1 LOW (legs[1].end_value)
+        # - bearish swing: 0.0 -> current candle LOW, 1.0 -> leg1 HIGH (legs[1].end_value)
         if s_type == 'bullish':
             if row['close'] >= legs_list[0]['end_value'] and row['high'] >= legs_list[1]['end_value']:
                 return fibonacci_retracement(start_price=row['high'], end_price=legs_list[1]['end_value'])
@@ -102,13 +105,18 @@ def main():
         Keeps 1.0 anchored to end_price_ref (leg1 end)."""
         if fib is None or end_price_ref is None:
             return fib
+        # Update rules per orientation contract
         if s_type == 'bullish':
+            # new higher high extends 0.0 upward (since 0.0 is current HIGH)
             if row['high'] > fib['0.0']:
                 return fibonacci_retracement(start_price=row['high'], end_price=end_price_ref)
         elif s_type == 'bearish':
+            # new lower low extends 0.0 downward (since 0.0 is current LOW)
             if row['low'] < fib['0.0']:
                 return fibonacci_retracement(start_price=row['low'], end_price=end_price_ref)
         return fib
+
+    # Note: fib 1.0 is locked after initialization; it changes only when a new swing (opposite or new same-direction) forms.
 
     def register_position(pos):
         # محاسبه R (ریسک اولیه)
@@ -330,11 +338,21 @@ def main():
                                 # track fib timings/anchors
                                 state.fib_built_time = row.name
                                 state.fib0_last_update_time = row.name
+                                # Lock fib 1.0 anchor on creation
                                 state.fib1_time = legs[1]['end'] if len(legs) >= 2 else None
                                 state.fib1_price = legs[1]['end_value'] if len(legs) >= 2 else None
                                 fib0_point = cache_data.index.tolist().index(row.name)
                                 fib_index = row.name
                                 last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else None
+                                # save swing signature to detect new same-direction swings
+                                try:
+                                    state.swing_signature = (
+                                        legs[0]['start'], legs[0]['end'],
+                                        legs[1]['start'], legs[1]['end'],
+                                        legs[2]['start'], legs[2]['end'],
+                                    ) if len(legs) >= 3 else None
+                                except Exception:
+                                    state.swing_signature = None
                                 legs = legs[-2:]
                                 # Reset fib update counter on (re)initialization
                                 f = 0
@@ -346,7 +364,37 @@ def main():
                         elif is_swing and state.fib_levels and last_swing_type == swing_type:
                             log(f'is_swing and state.fib_levels and last_swing_type == swing_type code:4213312', color='yellow')
                             row = cache_data.iloc[-1]
-                            end_price_ref = legs[1]['end_value'] if len(legs) >= 2 else None
+                            # اگر سوئینگ همان جهت است اما ساختار سوئینگ جدید شده باشد (signature متفاوت)، فیبو را از نو بساز
+                            try:
+                                cur_sig = (
+                                    legs[0]['start'], legs[0]['end'],
+                                    legs[1]['start'], legs[1]['end'],
+                                    legs[2]['start'], legs[2]['end'],
+                                ) if len(legs) >= 3 else None
+                            except Exception:
+                                cur_sig = None
+                            if cur_sig is not None and getattr(state, 'swing_signature', None) is not None and cur_sig != state.swing_signature:
+                                new_fib = _init_fib_from_swing(swing_type, legs, row)
+                                if new_fib:
+                                    state.fib_levels = new_fib
+                                    state.last_touched_705_point_up = None
+                                    state.last_touched_705_point_down = None
+                                    state.true_position = False
+                                    state.fib_built_time = row.name
+                                    state.fib0_last_update_time = row.name
+                                    state.fib1_time = legs[1]['end'] if len(legs) >= 2 else state.fib1_time
+                                    state.fib1_price = legs[1]['end_value'] if len(legs) >= 2 else state.fib1_price
+                                    fib0_point = cache_data.index.tolist().index(row.name)
+                                    fib_index = row.name
+                                    last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else last_leg1_value
+                                    state.swing_signature = cur_sig
+                                    f = 0
+                                    log(f'Fib re-initialized for new same-direction swing -> {swing_type} | {row.name}', color='green')
+                                    log(f'fib_levels: {state.fib_levels}', color='yellow')
+                                    log(f'fib_index: {fib_index}', color='yellow')
+                                    # پس از بازسازی، ادامهٔ این حلقه با فیب جدید
+                            # برای آپدیت 0.0 از لنگر قفل‌شدهٔ 1.0 استفاده می‌کنیم (نه leg1 فعلی)
+                            end_price_ref = state.fib1_price
                             # بروزرسانی 0.0 با سقف/کف جدید
                             new_fib = _update_fib0_if_extends(swing_type, state.fib_levels, row, end_price_ref)
                             if new_fib is not state.fib_levels:
@@ -358,7 +406,7 @@ def main():
                                 state.fib0_last_update_time = row.name
                                 fib0_point = cache_data.index.tolist().index(row.name)
                                 fib_index = row.name
-                                last_leg1_value = cache_data.index.tolist().index(legs[1]['end']) if len(legs) >= 2 else last_leg1_value
+                                # لنگر 1.0 قفل است؛ تغییر نمی‌کند
                                 legs = legs[-2:]
                                 # Count only extensions within the same swing
                                 f += 1
@@ -415,7 +463,8 @@ def main():
                         elif is_swing == False and state.fib_levels:
                             # خارج از حالت swing هم در صورت ثبت سقف/کف جدید 0.0 آپدیت شود (اگر leg1 موجود باشد)
                             row = cache_data.iloc[-1]
-                            end_price_ref = legs[1]['end_value'] if len(legs) >= 2 else None
+                            # برای آپدیت 0.0 از لنگر قفل‌شدهٔ 1.0 استفاده می‌کنیم
+                            end_price_ref = state.fib1_price
                             maybe_new = _update_fib0_if_extends(last_swing_type or swing_type, state.fib_levels, row, end_price_ref)
                             if maybe_new is not state.fib_levels:
                                 state.fib_levels = maybe_new
@@ -426,6 +475,10 @@ def main():
                                 state.fib0_last_update_time = row.name
                                 # Count extension outside swing as well (same swing context)
                                 f += 1
+                                try:
+                                    log(f'Fib 0.0 updated (extend, out-of-swing) at {row.name}', color='green')
+                                except Exception:
+                                    pass
                             # لمس‌ها و گارد 1.0 مانند بالا
                             if last_swing_type == 'bullish' or swing_type == 'bullish':
                                 if row['low'] <= state.fib_levels.get('0.705', float('inf')):
