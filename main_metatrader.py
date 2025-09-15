@@ -92,12 +92,30 @@ def main():
         # Orientation contract per user:
         # - bullish swing: 0.0 -> current candle HIGH, 1.0 -> leg1 LOW (legs[1].end_value)
         # - bearish swing: 0.0 -> current candle LOW, 1.0 -> leg1 HIGH (legs[1].end_value)
+        # Gating (critical): new fib only when last candle CLOSE crosses legs1 high/low (legs[1].start_value)
+        try:
+            l1_start = legs_list[1]['start_value']
+            l1_end = legs_list[1]['end_value']
+        except Exception:
+            return None
         if s_type == 'bullish':
-            if row['close'] >= legs_list[0]['end_value'] and row['high'] >= legs_list[1]['end_value']:
-                return fibonacci_retracement(start_price=row['high'], end_price=legs_list[1]['end_value'])
+            # Require close >= legs1 high (start_value of a down leg)
+            if row['close'] >= l1_start:
+                return fibonacci_retracement(start_price=row['high'], end_price=l1_end)
+            else:
+                try:
+                    log(f"Skip fib init: bullish close {row['close']} < legs1.high {l1_start} at {row.name}", color='lightyellow_ex')
+                except Exception:
+                    pass
         elif s_type == 'bearish':
-            if row['close'] <= legs_list[0]['end_value'] and row['low'] <= legs_list[1]['end_value']:
-                return fibonacci_retracement(start_price=row['low'], end_price=legs_list[1]['end_value'])
+            # Require close <= legs1 low (start_value of an up leg)
+            if row['close'] <= l1_start:
+                return fibonacci_retracement(start_price=row['low'], end_price=l1_end)
+            else:
+                try:
+                    log(f"Skip fib init: bearish close {row['close']} > legs1.low {l1_start} at {row.name}", color='lightyellow_ex')
+                except Exception:
+                    pass
         return None
 
     def _update_fib0_if_extends(s_type: str, fib: dict, row, end_price_ref: float | None):
@@ -422,6 +440,11 @@ def main():
                                         state.true_position = True
                                         # track second touch
                                         state.last_second_touch_705_point_up = row
+                                    else:
+                                        try:
+                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={state.fib_levels["0.705"]}', color='yellow')
+                                        except Exception:
+                                            pass
                                 elif state.fib_levels and row['low'] < state.fib_levels['1.0']:
                                     reset_state_and_window()
                                     legs = []
@@ -434,6 +457,11 @@ def main():
                                         log(f'Second touch 705 point code:6228455 {row.name}', color='green')
                                         state.true_position = True
                                         state.last_second_touch_705_point_down = row
+                                    else:
+                                        try:
+                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={state.fib_levels["0.705"]}', color='yellow')
+                                        except Exception:
+                                            pass
                                 elif state.fib_levels and row['high'] > state.fib_levels['1.0']:
                                     reset_state_and_window()
                                     legs = []
@@ -489,6 +517,11 @@ def main():
                                         log(f'Second touch 705 point at {row.name} price={row["low"]}', color='green')
                                         state.true_position = True
                                         state.last_second_touch_705_point_up = row
+                                    else:
+                                        try:
+                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                        except Exception:
+                                            pass
                                 elif state.fib_levels and row['low'] < state.fib_levels.get('1.0', -float('inf')):
                                     reset_state_and_window()
                                     legs = []
@@ -501,6 +534,11 @@ def main():
                                         log(f'Second touch 705 point code:6228455 {row.name}', color='green')
                                         state.true_position = True
                                         state.last_second_touch_705_point_down = row
+                                    else:
+                                        try:
+                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                        except Exception:
+                                            pass
                                 elif state.fib_levels and row['high'] > state.fib_levels.get('1.0', float('inf')):
                                     reset_state_and_window()
                                     legs = []
@@ -518,6 +556,11 @@ def main():
                                 elif row['status'] != state.last_touched_705_point_up['status']:
                                     log(f'Second touch 705 point at {row.name} price={row["low"]}', color='green')
                                     state.true_position = True
+                                else:
+                                    try:
+                                        log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                    except Exception:
+                                        pass
                         if last_swing_type == 'bearish' or swing_type == 'bearish':
                             if row['high'] >= state.fib_levels.get('0.705', -float('inf')):
                                 if state.last_touched_705_point_down is None:
@@ -526,6 +569,11 @@ def main():
                                 elif row['status'] != state.last_touched_705_point_down['status']:
                                     log(f'Second touch 705 point code:5128455 {row.name}', color='green')
                                     state.true_position = True
+                                else:
+                                    try:
+                                        log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                    except Exception:
+                                        pass
                     if len(legs) == 2:
                         log(f'leg0: {legs[0]["start"]}, {legs[0]["end"]}, leg1: {legs[1]["start"]}, {legs[1]["end"]}', color='lightcyan_ex')
                     if len(legs) == 1:
