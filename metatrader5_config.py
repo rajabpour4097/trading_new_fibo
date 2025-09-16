@@ -64,8 +64,7 @@ TRADING_CONFIG = {
     'min_swing_size': 4,
     'entry_tolerance': 2.0,
     'lookback_period': 20,
-    # Optional: epsilon tolerance for 0.705 touch detection (in pips)
-    'touch_epsilon_pips': 0.15,
+
 }
 
 # مدیریت پویا چند مرحله‌ای جدید - 12 مرحله
