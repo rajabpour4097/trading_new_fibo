@@ -84,6 +84,15 @@ def main():
     def _round(p):
         return float(f"{p:.{_digits()}f}")
 
+    # --- Touch epsilon (optional tolerance in pips) ---
+    def _touch_epsilon_price() -> float:
+        """Return price epsilon for touch detection based on TRADING_CONFIG['touch_epsilon_pips'] (default 0)."""
+        try:
+            pips = float(TRADING_CONFIG.get('touch_epsilon_pips', 0.0) or 0.0)
+        except Exception:
+            pips = 0.0
+        return pips * _pip_size_for(MT5_CONFIG['symbol'])
+
     # --- Fib helpers: single source of truth for init/update ---
     def _init_fib_from_swing(s_type: str, legs_list, row):
         """Create fib_levels for a detected swing. Returns dict or None if gating not satisfied."""
@@ -431,7 +440,11 @@ def main():
                                 log(f'Fib 0.0 updated (extend) at {row.name}', color='green')
                             # لمس 0.705 و گارد 1.0
                             if swing_type == 'bullish':
-                                if row['low'] <= state.fib_levels['0.705']:
+                                thr_705 = state.fib_levels['0.705']
+                                eps = _touch_epsilon_price()
+                                low_touch = row['low'] <= (thr_705 + eps)
+                                high_touch = row['high'] >= (thr_705 - eps)
+                                if low_touch:
                                     if state.last_touched_705_point_up is None:
                                         log(f'first touch 705 point code:7318455', color='green')
                                         state.last_touched_705_point_up = row
@@ -442,14 +455,24 @@ def main():
                                         state.last_second_touch_705_point_up = row
                                     else:
                                         try:
-                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={state.fib_levels["0.705"]}', color='yellow')
+                                            if high_touch and not getattr(state, 'last_second_touch_705_point_up', None):
+                                                log(f'BOTH-TOUCH: registering 2nd touch (bullish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_up = row
+                                            else:
+                                                delta = (row['low'] - thr_705)
+                                                log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['low'] < state.fib_levels['1.0']:
                                     reset_state_and_window()
                                     legs = []
                             elif swing_type == 'bearish':
-                                if row['high'] >= state.fib_levels['0.705']:
+                                thr_705 = state.fib_levels['0.705']
+                                eps = _touch_epsilon_price()
+                                high_touch = row['high'] >= (thr_705 - eps)
+                                low_touch = row['low'] <= (thr_705 + eps)
+                                if high_touch:
                                     if state.last_touched_705_point_down is None:
                                         log(f'first touch 705 point code:6328455', color='red')
                                         state.last_touched_705_point_down = row
@@ -459,12 +482,57 @@ def main():
                                         state.last_second_touch_705_point_down = row
                                     else:
                                         try:
-                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={state.fib_levels["0.705"]}', color='yellow')
+                                            if low_touch and not getattr(state, 'last_second_touch_705_point_down', None):
+                                                log(f'BOTH-TOUCH: registering 2nd touch (bearish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_down = row
+                                            else:
+                                                delta = (row['high'] - thr_705)
+                                                log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['high'] > state.fib_levels['1.0']:
                                     reset_state_and_window()
                                     legs = []
+                            # Back-check previous closed candle to avoid timing misses for second touch
+                            try:
+                                prev_row = cache_data.iloc[-2] if len(cache_data) >= 2 else None
+                                if prev_row is not None and state.fib_levels:
+                                    thr_705_bc = state.fib_levels.get('0.705')
+                                    eps_bc = _touch_epsilon_price()
+                                    # Bullish first touch (low side). For legacy second touch, status flip with low-touch is enough.
+                                    # For opposite-side acceptance without status flip, require the candle SPANS 0.705 (both low and high cross the threshold with epsilon).
+                                    if (state.last_touched_705_point_up is not None and
+                                        prev_row['low'] <= (thr_705_bc + eps_bc) and
+                                        prev_row['status'] != state.last_touched_705_point_up['status'] and
+                                        not getattr(state, 'last_second_touch_705_point_up', None)):
+                                        log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                        state.true_position = True
+                                        state.last_second_touch_705_point_up = prev_row
+                                    if (state.last_touched_705_point_down is not None and
+                                        prev_row['high'] >= (thr_705_bc - eps_bc) and
+                                        prev_row['status'] != state.last_touched_705_point_down['status'] and
+                                        not getattr(state, 'last_second_touch_705_point_down', None)):
+                                        log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                        state.true_position = True
+                                        state.last_second_touch_705_point_down = prev_row
+                                    # Opposite-side acceptance: require both sides touched (span) to ensure 0.705 truly crossed within the candle
+                                    if state.last_touched_705_point_up is not None and not getattr(state, 'last_second_touch_705_point_up', None):
+                                        span_low = prev_row['low'] <= (thr_705_bc + eps_bc)
+                                        span_high = prev_row['high'] >= (thr_705_bc - eps_bc)
+                                        if span_low and span_high:
+                                            log(f'BACKCHECK BOTH-TOUCH second (bullish) via span at {prev_row.name} low={prev_row["low"]} high={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_up = prev_row
+                                    if state.last_touched_705_point_down is not None and not getattr(state, 'last_second_touch_705_point_down', None):
+                                        span_low = prev_row['low'] <= (thr_705_bc + eps_bc)
+                                        span_high = prev_row['high'] >= (thr_705_bc - eps_bc)
+                                        if span_low and span_high:
+                                            log(f'BACKCHECK BOTH-TOUCH second (bearish) via span at {prev_row.name} low={prev_row["low"]} high={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_down = prev_row
+                            except Exception:
+                                pass
 
                         # فاز جدید: اگر جهت swing عوض شد، فیب قبلی حذف و تلاش برای ساخت فیب جدید (بدون انتظار برای نقض 1.0)
                         elif is_swing and state.fib_levels and last_swing_type != swing_type:
@@ -509,7 +577,11 @@ def main():
                                     pass
                             # لمس‌ها و گارد 1.0 مانند بالا
                             if last_swing_type == 'bullish' or swing_type == 'bullish':
-                                if row['low'] <= state.fib_levels.get('0.705', float('inf')):
+                                thr_705 = state.fib_levels.get('0.705', float('inf'))
+                                eps = _touch_epsilon_price()
+                                low_touch = row['low'] <= (thr_705 + eps)
+                                high_touch = row['high'] >= (thr_705 - eps)
+                                if low_touch:
                                     if state.last_touched_705_point_up is None:
                                         log(f'first touch 705 point at {row.name} price={row["low"]}', color='green')
                                         state.last_touched_705_point_up = row
@@ -519,14 +591,24 @@ def main():
                                         state.last_second_touch_705_point_up = row
                                     else:
                                         try:
-                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                            if high_touch and not getattr(state, 'last_second_touch_705_point_up', None):
+                                                log(f'BOTH-TOUCH: registering 2nd touch (bullish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_up = row
+                                            else:
+                                                delta = (row['low'] - thr_705)
+                                                log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['low'] < state.fib_levels.get('1.0', -float('inf')):
                                     reset_state_and_window()
                                     legs = []
                             if last_swing_type == 'bearish' or swing_type == 'bearish':
-                                if row['high'] >= state.fib_levels.get('0.705', -float('inf')):
+                                thr_705 = state.fib_levels.get('0.705', -float('inf'))
+                                eps = _touch_epsilon_price()
+                                high_touch = row['high'] >= (thr_705 - eps)
+                                low_touch = row['low'] <= (thr_705 + eps)
+                                if high_touch:
                                     if state.last_touched_705_point_down is None:
                                         log(f'first touch 705 point code:6328455', color='red')
                                         state.last_touched_705_point_down = row
@@ -536,12 +618,54 @@ def main():
                                         state.last_second_touch_705_point_down = row
                                     else:
                                         try:
-                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                            if low_touch and not getattr(state, 'last_second_touch_705_point_down', None):
+                                                log(f'BOTH-TOUCH: registering 2nd touch (bearish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_down = row
+                                            else:
+                                                delta = (row['high'] - thr_705)
+                                                log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['high'] > state.fib_levels.get('1.0', float('inf')):
                                     reset_state_and_window()
                                     legs = []
+                            # Back-check previous closed candle
+                            try:
+                                prev_row = cache_data.iloc[-2] if len(cache_data) >= 2 else None
+                                if prev_row is not None and state.fib_levels:
+                                    thr_705_bc = state.fib_levels.get('0.705')
+                                    eps_bc = _touch_epsilon_price()
+                                    # Bullish first touch (low side): accept second touch if prev bar hit either:
+                                    # - low side with status flip (legacy), OR
+                                    # - high side (opposite side) only if the candle spans across 0.705 (both low and high touch)
+                                    if state.last_touched_705_point_up is not None and not getattr(state, 'last_second_touch_705_point_up', None):
+                                        has_low = prev_row['low'] <= (thr_705_bc + eps_bc)
+                                        has_high = prev_row['high'] >= (thr_705_bc - eps_bc)
+                                        if has_low and prev_row['status'] != state.last_touched_705_point_up['status']:
+                                            log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_up = prev_row
+                                        elif has_high and has_low:
+                                            log(f'BACKCHECK BOTH-TOUCH second (bullish) via span at {prev_row.name} low={prev_row["low"]} high={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_up = prev_row
+                                    # Bearish first touch (high side): accept second touch if prev bar hit either:
+                                    # - high side with status flip (legacy), OR
+                                    # - low side (opposite side) only if the candle spans across 0.705 (both low and high touch)
+                                    if state.last_touched_705_point_down is not None and not getattr(state, 'last_second_touch_705_point_down', None):
+                                        has_high = prev_row['high'] >= (thr_705_bc - eps_bc)
+                                        has_low = prev_row['low'] <= (thr_705_bc + eps_bc)
+                                        if has_high and prev_row['status'] != state.last_touched_705_point_down['status']:
+                                            log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_down = prev_row
+                                        elif has_low and has_high:
+                                            log(f'BACKCHECK BOTH-TOUCH second (bearish) via span at {prev_row.name} low={prev_row["low"]} high={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_down = prev_row
+                            except Exception:
+                                pass
 
                 elif len(legs) < 3:
                     # این بخش قبلاً از end_price نامشخص استفاده می‌کرد؛
@@ -549,7 +673,11 @@ def main():
                     if state.fib_levels:
                         row = cache_data.iloc[-1]
                         if last_swing_type == 'bullish' or swing_type == 'bullish':
-                            if row['low'] <= state.fib_levels.get('0.705', float('inf')):
+                            thr_705 = state.fib_levels.get('0.705', float('inf'))
+                            eps = _touch_epsilon_price()
+                            low_touch = row['low'] <= (thr_705 + eps)
+                            high_touch = row['high'] >= (thr_705 - eps)
+                            if low_touch:
                                 if state.last_touched_705_point_up is None:
                                     log(f'first touch 705 point at {row.name} price={row["low"]}', color='green')
                                     state.last_touched_705_point_up = row
@@ -558,11 +686,21 @@ def main():
                                     state.true_position = True
                                 else:
                                     try:
-                                        log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                        if high_touch and not getattr(state, 'last_second_touch_705_point_up', None):
+                                            log(f'BOTH-TOUCH: registering 2nd touch (bullish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_up = row
+                                        else:
+                                            delta = (row['low'] - thr_705)
+                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                     except Exception:
                                         pass
                         if last_swing_type == 'bearish' or swing_type == 'bearish':
-                            if row['high'] >= state.fib_levels.get('0.705', -float('inf')):
+                            thr_705 = state.fib_levels.get('0.705', -float('inf'))
+                            eps = _touch_epsilon_price()
+                            high_touch = row['high'] >= (thr_705 - eps)
+                            low_touch = row['low'] <= (thr_705 + eps)
+                            if high_touch:
                                 if state.last_touched_705_point_down is None:
                                     log(f'first touch 705 point', color='red')
                                     state.last_touched_705_point_down = row
@@ -571,9 +709,45 @@ def main():
                                     state.true_position = True
                                 else:
                                     try:
-                                        log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={state.fib_levels.get("0.705")}', color='yellow')
+                                        if low_touch and not getattr(state, 'last_second_touch_705_point_down', None):
+                                            log(f'BOTH-TOUCH: registering 2nd touch (bearish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
+                                            state.true_position = True
+                                            state.last_second_touch_705_point_down = row
+                                        else:
+                                            delta = (row['high'] - thr_705)
+                                            log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                     except Exception:
                                         pass
+                        # Back-check previous closed candle
+                        try:
+                            prev_row = cache_data.iloc[-2] if len(cache_data) >= 2 else None
+                            if prev_row is not None and state.fib_levels:
+                                thr_705_bc = state.fib_levels.get('0.705')
+                                eps_bc = _touch_epsilon_price()
+                                if state.last_touched_705_point_up is not None and not getattr(state, 'last_second_touch_705_point_up', None):
+                                    has_low = prev_row['low'] <= (thr_705_bc + eps_bc)
+                                    has_high = prev_row['high'] >= (thr_705_bc - eps_bc)
+                                    if has_low and prev_row['status'] != state.last_touched_705_point_up['status']:
+                                        log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                        state.true_position = True
+                                        state.last_second_touch_705_point_up = prev_row
+                                    elif has_high and has_low:
+                                        log(f'BACKCHECK BOTH-TOUCH second (bullish) via span at {prev_row.name} low={prev_row["low"]} high={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                        state.true_position = True
+                                        state.last_second_touch_705_point_up = prev_row
+                                if state.last_touched_705_point_down is not None and not getattr(state, 'last_second_touch_705_point_down', None):
+                                    has_high = prev_row['high'] >= (thr_705_bc - eps_bc)
+                                    has_low = prev_row['low'] <= (thr_705_bc + eps_bc)
+                                    if has_high and prev_row['status'] != state.last_touched_705_point_down['status']:
+                                        log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                        state.true_position = True
+                                        state.last_second_touch_705_point_down = prev_row
+                                    elif has_low and has_high:
+                                        log(f'BACKCHECK BOTH-TOUCH second (bearish) via span at {prev_row.name} low={prev_row["low"]} high={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                        state.true_position = True
+                                        state.last_second_touch_705_point_down = prev_row
+                        except Exception:
+                            pass
                     if len(legs) == 2:
                         log(f'leg0: {legs[0]["start"]}, {legs[0]["end"]}, leg1: {legs[1]["start"]}, {legs[1]["end"]}', color='lightcyan_ex')
                     if len(legs) == 1:
