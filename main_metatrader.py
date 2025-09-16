@@ -65,6 +65,8 @@ def main():
     last_data_time = None
     wait_count = 0
     max_wait_cycles = 120  # پس از 60 ثانیه (120 * 0.5) اجبار به پردازش
+    # نگهداری وضعیت قبلی قابلیت معامله برای ریست در انتهای ساعات ترید
+    last_can_trade_state = None
 
     # بعد از تعریف متغیرها در main()
     def reset_state_and_window():
@@ -280,6 +282,15 @@ def main():
         try:
             # بررسی ساعات معاملاتی
             can_trade, trade_message = mt5_conn.can_trade()
+            # اگر از حالت قابل معامله به غیرقابل معامله تغییر کرد => ریست کامل BotState
+            try:
+                if last_can_trade_state is True and not can_trade:
+                    log("🧹 Trading hours ended -> resetting BotState to avoid stale context", color='magenta')
+                    state.reset()
+            except Exception:
+                pass
+            finally:
+                last_can_trade_state = can_trade
             
             if not can_trade:
                 log(f"⏰ {trade_message}", color='yellow', save_to_file=False)
