@@ -536,7 +536,7 @@ def main():
                                             state.last_touched_705_point_down = prev_row
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_high_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_high_touch):
                                                 log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_down = row
@@ -556,7 +556,7 @@ def main():
                                                 state.last_touched_705_point_up = prev_row
                                                 cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                                 cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                                if (row['status'] != prev_row['status'] and cur_low_touch) or (cur_low_touch and cur_high_touch):
+                                                if (row['status'] != prev_row['status'] and cur_low_touch):
                                                     log(f'SWAP-BACKCHECK BOTH-TOUCH (bullish) -> first={prev_row.name} second={row.name}', color='green')
                                                     state.true_position = True
                                                     state.last_second_touch_705_point_up = row
@@ -574,7 +574,7 @@ def main():
                                                 state.last_touched_705_point_down = prev_row
                                                 cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                                 cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                                if (row['status'] != prev_row['status'] and cur_high_touch) or (cur_low_touch and cur_high_touch):
+                                                if (row['status'] != prev_row['status'] and cur_high_touch):
                                                     log(f'SWAP-BACKCHECK BOTH-TOUCH (bearish) -> first={prev_row.name} second={row.name}', color='green')
                                                     state.true_position = True
                                                     state.last_second_touch_705_point_down = row
@@ -701,7 +701,7 @@ def main():
                                             # Current row context
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_low_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_low_touch):
                                                 log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_up = row
@@ -719,7 +719,7 @@ def main():
                                             state.last_touched_705_point_down = prev_row
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_high_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_high_touch):
                                                 log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_down = row
@@ -739,7 +739,7 @@ def main():
                                                 state.last_touched_705_point_up = prev_row
                                                 cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                                 cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                                if (row['status'] != prev_row['status'] and cur_low_touch) or (cur_low_touch and cur_high_touch):
+                                                if (row['status'] != prev_row['status'] and cur_low_touch):
                                                     log(f'SWAP-BACKCHECK BOTH-TOUCH (bullish) -> first={prev_row.name} second={row.name}', color='green')
                                                     state.true_position = True
                                                     state.last_second_touch_705_point_up = row
@@ -757,7 +757,7 @@ def main():
                                                 state.last_touched_705_point_down = prev_row
                                                 cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                                 cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                                if (row['status'] != prev_row['status'] and cur_high_touch) or (cur_low_touch and cur_high_touch):
+                                                if (row['status'] != prev_row['status'] and cur_high_touch):
                                                     log(f'SWAP-BACKCHECK BOTH-TOUCH (bearish) -> first={prev_row.name} second={row.name}', color='green')
                                                     state.true_position = True
                                                     state.last_second_touch_705_point_down = row
@@ -835,7 +835,7 @@ def main():
                                             state.last_touched_705_point_up = prev_row
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_low_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_low_touch):
                                                 log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_up = row
@@ -850,7 +850,7 @@ def main():
                                             state.last_touched_705_point_up = prev_row
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_low_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_low_touch):
                                                 log(f'SWAP-BACKCHECK BOTH-TOUCH (bullish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_up = row
@@ -868,7 +868,7 @@ def main():
                                             state.last_touched_705_point_down = prev_row
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_high_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_high_touch):
                                                 log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_down = row
@@ -883,7 +883,7 @@ def main():
                                             state.last_touched_705_point_down = prev_row
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_high_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_high_touch):
                                                 log(f'SWAP-BACKCHECK BOTH-TOUCH (bearish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_down = row
