@@ -335,6 +335,7 @@ def main():
             if process_data:
                 log((' ' * 80 + '\n') * 3)
                 log(f'Log number {i}:', color='lightred_ex')
+                log(f'📊 Processing {len(cache_data)} data points | Window: {window_size}', color='cyan')
                 log(f' ' * 80)
                 i += 1
                 
@@ -1151,6 +1152,7 @@ def main():
                     legs = []
                 
                 log(f'cache_data.iloc[-1].name: {cache_data.iloc[-1].name}', color='lightblue_ex')
+                log(f'Total cache_data len: {len(cache_data)} | window_size: {window_size}', color='cyan')
                 log(f'len(legs): {len(legs)} | start_index: {start_index} | {cache_data.iloc[start_index].name}', color='lightred_ex')
                 log(f' ' * 80)
                 log(f'-'* 80)
