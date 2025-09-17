@@ -465,14 +465,11 @@ def main():
                                         # track second touch
                                         state.last_second_touch_705_point_up = row
                                     else:
+                                        # Same status: REJECT regardless of span - only opposite status allowed for second touch
                                         try:
-                                            if high_touch and not getattr(state, 'last_second_touch_705_point_up', None):
-                                                log(f'BOTH-TOUCH: registering 2nd touch (bullish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
-                                                state.true_position = True
-                                                state.last_second_touch_705_point_up = row
-                                            else:
-                                                delta = (row['low'] - thr_705)
-                                                log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
+                                            delta = (row['low'] - thr_705)
+                                            span_info = f'span={high_touch and low_touch}' if high_touch else ''
+                                            log(f'705 touched again but same status (REJECTED). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={thr_705} eps={eps} delta={delta} {span_info}', color='yellow')
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['low'] < state.fib_levels['1.0']:
@@ -492,14 +489,11 @@ def main():
                                         state.true_position = True
                                         state.last_second_touch_705_point_down = row
                                     else:
+                                        # Same status: REJECT regardless of span - only opposite status allowed for second touch
                                         try:
-                                            if low_touch and not getattr(state, 'last_second_touch_705_point_down', None):
-                                                log(f'BOTH-TOUCH: registering 2nd touch (bearish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
-                                                state.true_position = True
-                                                state.last_second_touch_705_point_down = row
-                                            else:
-                                                delta = (row['high'] - thr_705)
-                                                log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
+                                            delta = (row['high'] - thr_705)
+                                            span_info = f'span={low_touch and high_touch}' if low_touch else ''
+                                            log(f'705 touched again but same status (REJECTED). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={thr_705} eps={eps} delta={delta} {span_info}', color='yellow')
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['high'] > state.fib_levels['1.0']:
@@ -523,12 +517,12 @@ def main():
                                             # Current row context
                                             cur_low_touch = row['low'] <= (thr_705_bc + eps_bc)
                                             cur_high_touch = row['high'] >= (thr_705_bc - eps_bc)
-                                            if (row['status'] != prev_row['status'] and cur_low_touch) or (cur_low_touch and cur_high_touch):
+                                            if (row['status'] != prev_row['status'] and cur_low_touch):
                                                 log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_up = row
                                             else:
-                                                log(f'SWAP-BACKCHECK set FIRST (bullish) to {prev_row.name}; waiting for valid second', color='yellow')
+                                                log(f'SWAP-BACKCHECK set FIRST (bullish) to {prev_row.name}; waiting for opposite status second touch', color='yellow')
                                         else:
                                             log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
                                             state.true_position = True
