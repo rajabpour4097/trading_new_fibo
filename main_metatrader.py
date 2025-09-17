@@ -525,9 +525,13 @@ def main():
                                             else:
                                                 log(f'SWAP-BACKCHECK set FIRST (bullish) to {prev_row.name}; waiting for opposite status second touch', color='yellow')
                                         else:
-                                            log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_up = prev_row
+                                            # Also check status for non-swap backcheck
+                                            if prev_row['status'] != state.last_touched_705_point_up['status']:
+                                                log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_up = prev_row
+                                            else:
+                                                log(f'BACKCHECK REJECTED same status: prev={prev_row["status"]} vs first={state.last_touched_705_point_up["status"]}', color='yellow')
                                     if (state.last_touched_705_point_down is not None and
                                         prev_row['high'] >= (thr_705_bc - eps_bc) and
                                         prev_row['status'] != state.last_touched_705_point_down['status'] and
@@ -543,9 +547,13 @@ def main():
                                             else:
                                                 log(f'SWAP-BACKCHECK set FIRST (bearish) to {prev_row.name}; waiting for valid second', color='yellow')
                                         else:
-                                            log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_down = prev_row
+                                            # Also check status for non-swap backcheck
+                                            if prev_row['status'] != state.last_touched_705_point_down['status']:
+                                                log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_down = prev_row
+                                            else:
+                                                log(f'BACKCHECK REJECTED same status: prev={prev_row["status"]} vs first={state.last_touched_705_point_down["status"]}', color='yellow')
                                     # Opposite-side acceptance: require both sides touched (span) to ensure 0.705 truly crossed within the candle
                                     if state.last_touched_705_point_up is not None and not getattr(state, 'last_second_touch_705_point_up', None):
                                         span_low = prev_row['low'] <= (thr_705_bc + eps_bc)
@@ -644,7 +652,7 @@ def main():
                                         state.last_second_touch_705_point_up = row
                                     else:
                                         try:
-                                            if high_touch and not getattr(state, 'last_second_touch_705_point_up', None):
+                                            if high_touch and not getattr(state, 'last_second_touch_705_point_up', None) and row['status'] != state.last_touched_705_point_up['status']:
                                                 log(f'BOTH-TOUCH: registering 2nd touch (bullish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_up = row
@@ -671,7 +679,7 @@ def main():
                                         state.last_second_touch_705_point_down = row
                                     else:
                                         try:
-                                            if low_touch and not getattr(state, 'last_second_touch_705_point_down', None):
+                                            if low_touch and not getattr(state, 'last_second_touch_705_point_down', None) and row['status'] != state.last_touched_705_point_down['status']:
                                                 log(f'BOTH-TOUCH: registering 2nd touch (bearish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
                                                 state.true_position = True
                                                 state.last_second_touch_705_point_down = row
@@ -708,9 +716,13 @@ def main():
                                             else:
                                                 log(f'SWAP-BACKCHECK set FIRST (bullish) to {prev_row.name}; waiting for valid second', color='yellow')
                                         else:
-                                            log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_up = prev_row
+                                            # Also check status for non-swap backcheck
+                                            if prev_row['status'] != state.last_touched_705_point_up['status']:
+                                                log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_up = prev_row
+                                            else:
+                                                log(f'BACKCHECK REJECTED same status: prev={prev_row["status"]} vs first={state.last_touched_705_point_up["status"]}', color='yellow')
                                     if (state.last_touched_705_point_down is not None and
                                         prev_row['high'] >= (thr_705_bc - eps_bc) and
                                         prev_row['status'] != state.last_touched_705_point_down['status'] and
@@ -726,9 +738,13 @@ def main():
                                             else:
                                                 log(f'SWAP-BACKCHECK set FIRST (bearish) to {prev_row.name}; waiting for valid second', color='yellow')
                                         else:
-                                            log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_down = prev_row
+                                            # Also check status for non-swap backcheck
+                                            if prev_row['status'] != state.last_touched_705_point_down['status']:
+                                                log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_down = prev_row
+                                            else:
+                                                log(f'BACKCHECK REJECTED same status: prev={prev_row["status"]} vs first={state.last_touched_705_point_down["status"]}', color='yellow')
                                     # Opposite-side acceptance: require both sides touched (span) to ensure 0.705 truly crossed within the candle
                                     if state.last_touched_705_point_up is not None and not getattr(state, 'last_second_touch_705_point_up', None):
                                         span_low = prev_row['low'] <= (thr_705_bc + eps_bc)
@@ -789,7 +805,7 @@ def main():
                                     state.true_position = True
                                 else:
                                     try:
-                                        if high_touch and not getattr(state, 'last_second_touch_705_point_up', None):
+                                        if high_touch and not getattr(state, 'last_second_touch_705_point_up', None) and row['status'] != state.last_touched_705_point_up['status']:
                                             log(f'BOTH-TOUCH: registering 2nd touch (bullish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
                                             state.true_position = True
                                             state.last_second_touch_705_point_up = row
@@ -812,7 +828,7 @@ def main():
                                     state.true_position = True
                                 else:
                                     try:
-                                        if low_touch and not getattr(state, 'last_second_touch_705_point_down', None):
+                                        if low_touch and not getattr(state, 'last_second_touch_705_point_down', None) and row['status'] != state.last_touched_705_point_down['status']:
                                             log(f'BOTH-TOUCH: registering 2nd touch (bearish) at {row.name} via opposite side. low={row["low"]} high={row["high"]} thr={thr_705} eps={eps}', color='green')
                                             state.true_position = True
                                             state.last_second_touch_705_point_down = row
@@ -842,9 +858,13 @@ def main():
                                             else:
                                                 log(f'SWAP-BACKCHECK set FIRST (bullish) to {prev_row.name}; waiting for valid second', color='yellow')
                                         else:
-                                            log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_up = prev_row
+                                            # Also check status for non-swap backcheck
+                                            if prev_row['status'] != state.last_touched_705_point_up['status']:
+                                                log(f'BACKCHECK Second touch 705 (bullish) at {prev_row.name} price={prev_row["low"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_up = prev_row
+                                            else:
+                                                log(f'BACKCHECK REJECTED same status: prev={prev_row["status"]} vs first={state.last_touched_705_point_up["status"]}', color='yellow')
                                     elif has_high and has_low:
                                         if state.last_touched_705_point_up.name >= prev_row.name:
                                             state.last_touched_705_point_up = prev_row
@@ -875,9 +895,13 @@ def main():
                                             else:
                                                 log(f'SWAP-BACKCHECK set FIRST (bearish) to {prev_row.name}; waiting for valid second', color='yellow')
                                         else:
-                                            log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_down = prev_row
+                                            # Also check status for non-swap backcheck
+                                            if prev_row['status'] != state.last_touched_705_point_down['status']:
+                                                log(f'BACKCHECK Second touch 705 (bearish) at {prev_row.name} price={prev_row["high"]} thr={thr_705_bc} eps={eps_bc}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_down = prev_row
+                                            else:
+                                                log(f'BACKCHECK REJECTED same status: prev={prev_row["status"]} vs first={state.last_touched_705_point_down["status"]}', color='yellow')
                                     elif has_low and has_high:
                                         if state.last_touched_705_point_down.name >= prev_row.name:
                                             state.last_touched_705_point_down = prev_row
