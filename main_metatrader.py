@@ -10,6 +10,7 @@ from mt5_connector import MT5Connector
 from swing import get_swing_points
 from utils import BotState
 from save_file import log
+import inspect, os
 from metatrader5_config import MT5_CONFIG, TRADING_CONFIG, DYNAMIC_RISK_CONFIG
 from email_notifier import send_trade_email_async
 from analytics.hooks import log_signal, log_position_event
@@ -60,6 +61,28 @@ def main():
     print("🔍 Checking market state...")
     mt5_conn.check_market_state()
     print("-" * 50)
+
+    # --- Contextual logging wrapper: prefix logs with file:function:line ---
+    def _log_ctx(message: str, color: str | None = None, save_to_file: bool = True):
+        try:
+            frame = inspect.currentframe()
+            # Walk back to the caller outside this wrapper
+            caller = frame.f_back if frame else None
+            lineno = getattr(caller, 'f_lineno', None)
+            func = getattr(caller, 'f_code', None)
+            fname = getattr(func, 'co_filename', None) if func else None
+            funcname = getattr(func, 'co_name', None) if func else None
+            base = os.path.basename(fname) if fname else 'unknown'
+            prefix = f"[{base}:{funcname}:{lineno}] "
+            return log(prefix + str(message), color=color, save_to_file=save_to_file)
+        except Exception:
+            # Fallback to original log if anything goes wrong
+            return log(message, color=color, save_to_file=save_to_file)
+
+    # Monkey-patch: use contextual logger throughout this function
+    global log  # type: ignore
+    _orig_log = log  # keep original reference if needed
+    log = _log_ctx  # type: ignore
 
     # اضافه کردن متغیر برای ذخیره آخرین داده
     last_data_time = None
@@ -327,6 +350,72 @@ def main():
                                 pass
             if modified_any:
                 position_states[pos.ticket] = st
+
+    def _validate_pre_entry(direction: str, row) -> bool:
+        """Validate right before order placement that:
+        - fib exists and has not been invalidated by a 1.0 breach on the latest candle
+        - a valid second-touch still exists and remains opposite to the first-touch
+        - the stored second-touch still satisfies the side-specific 0.705 touch against current fib
+        Returns True if entry is valid; otherwise logs and returns False.
+        """
+        try:
+            if not state.fib_levels:
+                log("🚫 Skip entry: fib_levels missing", color='yellow')
+                return False
+            eps = _touch_epsilon_price()
+            fib1 = state.fib_levels.get('1.0')
+            fib705 = state.fib_levels.get('0.705')
+            if fib1 is None or fib705 is None:
+                log("🚫 Skip entry: fib levels incomplete (need 1.0 and 0.705)", color='yellow')
+                return False
+
+            # 1) Guard: 1.0 must not be breached at the latest bar
+            if direction == 'buy':
+                if row['low'] <= (fib1 + eps):
+                    log("🚫 Skip BUY: fib 1.0 breached at latest bar (post-signal)", color='magenta')
+                    return False
+            else:  # sell
+                if row['high'] >= (fib1 - eps):
+                    log("🚫 Skip SELL: fib 1.0 breached at latest bar (post-signal)", color='magenta')
+                    return False
+
+            # 2) Validate second-touch presence and consistency
+            if direction == 'buy':
+                stp = state.last_second_touch_705_point_up
+                fst = state.last_touched_705_point_up
+                if not stp or not fst:
+                    log("🚫 Skip BUY: missing second-touch or first-touch state", color='yellow')
+                    return False
+                if stp['idx'] <= fst['idx']:
+                    log("🚫 Skip BUY: invalid touch order (second idx <= first idx)", color='yellow')
+                    return False
+                if stp['status'] == fst['status']:
+                    log("🚫 Skip BUY: second-touch not opposite status", color='yellow')
+                    return False
+                # Side-specific touch re-check against current fib
+                if stp['price'] > (fib705 + eps):
+                    log("🚫 Skip BUY: stored second-touch no longer within 0.705+eps", color='yellow')
+                    return False
+            else:  # sell
+                stp = state.last_second_touch_705_point_down
+                fst = state.last_touched_705_point_down
+                if not stp or not fst:
+                    log("🚫 Skip SELL: missing second-touch or first-touch state", color='yellow')
+                    return False
+                if stp['idx'] <= fst['idx']:
+                    log("🚫 Skip SELL: invalid touch order (second idx <= first idx)", color='yellow')
+                    return False
+                if stp['status'] == fst['status']:
+                    log("🚫 Skip SELL: second-touch not opposite status", color='yellow')
+                    return False
+                if stp['price'] < (fib705 - eps):
+                    log("🚫 Skip SELL: stored second-touch no longer within 0.705-eps", color='yellow')
+                    return False
+
+            return True
+        except Exception as _e:
+            log(f"⚠️ Pre-entry validation error: {_e}", color='red')
+            return False
 
     while True:
         try:
@@ -895,6 +984,11 @@ def main():
                 if state.true_position and (last_swing_type == 'bullish' or swing_type == 'bullish'):
                     last_tick = mt5.symbol_info_tick(MT5_CONFIG['symbol'])
                     buy_entry_price = last_tick.ask
+                    # Pre-entry validation to avoid race-condition entries after context changes
+                    if not _validate_pre_entry('buy', cache_data.iloc[-1]):
+                        state.reset()
+                        reset_state_and_window()
+                        continue
                     # لاگ سیگنال (قبل از ارسال سفارش)
                     try:
                         log_signal(
@@ -1027,6 +1121,11 @@ def main():
                 if state.true_position and (last_swing_type == 'bearish' or swing_type == 'bearish'):
                     last_tick = mt5.symbol_info_tick(MT5_CONFIG['symbol'])
                     sell_entry_price = last_tick.bid
+                    # Pre-entry validation to avoid race-condition entries after context changes
+                    if not _validate_pre_entry('sell', cache_data.iloc[-1]):
+                        state.reset()
+                        reset_state_and_window()
+                        continue
                     try:
                         log_signal(
                             symbol=MT5_CONFIG['symbol'],
