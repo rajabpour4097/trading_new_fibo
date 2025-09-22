@@ -679,13 +679,15 @@ def main():
                                             state.last_second_touch_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
                                         # B) Swap: prev_row should be the first touch; current row may be second
                                         elif prev_row['low'] <= (thr_705_bc + eps_bc):
-                                            state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
-                                            if (cur_idx > prev_idx and
-                                                row['status'] != prev_row['status'] and
-                                                row['low'] <= (thr_705_bc + eps_bc)):
-                                                log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
-                                                state.true_position = True
-                                                state.last_second_touch_705_point_up = _create_touch_point(row, cur_idx, row['low'])
+                                            # Only swap if prev_row has different status than the original first touch
+                                            if prev_row['status'] != first['status']:
+                                                state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
+                                                if (cur_idx > prev_idx and
+                                                    row['status'] != prev_row['status'] and
+                                                    row['low'] <= (thr_705_bc + eps_bc)):
+                                                    log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
+                                                    state.true_position = True
+                                                    state.last_second_touch_705_point_up = _create_touch_point(row, cur_idx, row['low'])
 
                                     # Bearish back-check (use high only)
                                     if (state.last_touched_705_point_down is not None and
@@ -700,13 +702,15 @@ def main():
                                             state.last_second_touch_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
                                         # B) Swap: prev_row should be the first touch; current row may be second
                                         elif prev_row['high'] >= (thr_705_bc - eps_bc):
-                                            state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
-                                            if (cur_idx > prev_idx and
-                                                row['status'] != prev_row['status'] and
-                                                row['high'] >= (thr_705_bc - eps_bc)):
-                                                log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
-                                                state.true_position = True
-                                                state.last_second_touch_705_point_down = _create_touch_point(row, cur_idx, row['high'])
+                                            # Only swap if prev_row has different status than the original first touch
+                                            if prev_row['status'] != first_d['status']:
+                                                state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
+                                                if (cur_idx > prev_idx and
+                                                    row['status'] != prev_row['status'] and
+                                                    row['high'] >= (thr_705_bc - eps_bc)):
+                                                    log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
+                                                    state.true_position = True
+                                                    state.last_second_touch_705_point_down = _create_touch_point(row, cur_idx, row['high'])
                             except Exception:
                                 pass
 
@@ -841,13 +845,15 @@ def main():
                                             state.true_position = True
                                             state.last_second_touch_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
                                         elif prev_row['low'] <= (thr_705_bc + eps_bc):
-                                            state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
-                                            if (cur_idx > prev_idx and
-                                                row['status'] != prev_row['status'] and
-                                                row['low'] <= (thr_705_bc + eps_bc)):
-                                                log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
-                                                state.true_position = True
-                                                state.last_second_touch_705_point_up = _create_touch_point(row, cur_idx, row['low'])
+                                            # Only swap if prev_row has different status than the original first touch
+                                            if prev_row['status'] != first['status']:
+                                                state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
+                                                if (cur_idx > prev_idx and
+                                                    row['status'] != prev_row['status'] and
+                                                    row['low'] <= (thr_705_bc + eps_bc)):
+                                                    log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
+                                                    state.true_position = True
+                                                    state.last_second_touch_705_point_up = _create_touch_point(row, cur_idx, row['low'])
 
                                     # Bearish back-check (use high only)
                                     if (state.last_touched_705_point_down is not None and
@@ -860,13 +866,15 @@ def main():
                                             state.true_position = True
                                             state.last_second_touch_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
                                         elif prev_row['high'] >= (thr_705_bc - eps_bc):
-                                            state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
-                                            if (cur_idx > prev_idx and
-                                                row['status'] != prev_row['status'] and
-                                                row['high'] >= (thr_705_bc - eps_bc)):
-                                                log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
-                                                state.true_position = True
-                                                state.last_second_touch_705_point_down = _create_touch_point(row, cur_idx, row['high'])
+                                            # Only swap if prev_row has different status than the original first touch
+                                            if prev_row['status'] != first_d['status']:
+                                                state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
+                                                if (cur_idx > prev_idx and
+                                                    row['status'] != prev_row['status'] and
+                                                    row['high'] >= (thr_705_bc - eps_bc)):
+                                                    log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
+                                                    state.true_position = True
+                                                    state.last_second_touch_705_point_down = _create_touch_point(row, cur_idx, row['high'])
                             except Exception:
                                 pass
 
@@ -945,13 +953,15 @@ def main():
                                         state.true_position = True
                                         state.last_second_touch_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
                                     elif prev_row['low'] <= (thr_705_bc + eps_bc):
-                                        state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
-                                        if (cur_idx == prev_idx + 1 and
-                                            row['status'] != prev_row['status'] and
-                                            row['low'] <= (thr_705_bc + eps_bc)):
-                                            log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_up = _create_touch_point(row, cur_idx, row['low'])
+                                        # Only swap if prev_row has different status than the original first touch
+                                        if prev_row['status'] != first['status']:
+                                            state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
+                                            if (cur_idx > prev_idx and
+                                                row['status'] != prev_row['status'] and
+                                                row['low'] <= (thr_705_bc + eps_bc)):
+                                                log(f'SWAP-BACKCHECK Second touch 705 (bullish) -> first={prev_row.name} second={row.name}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_up = _create_touch_point(row, cur_idx, row['low'])
 
                                 # Bearish back-check (use high only)
                                 if (state.last_touched_705_point_down is not None and
@@ -964,13 +974,15 @@ def main():
                                         state.true_position = True
                                         state.last_second_touch_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
                                     elif prev_row['high'] >= (thr_705_bc - eps_bc):
-                                        state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
-                                        if (cur_idx == prev_idx + 1 and
-                                            row['status'] != prev_row['status'] and
-                                            row['high'] >= (thr_705_bc - eps_bc)):
-                                            log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
-                                            state.true_position = True
-                                            state.last_second_touch_705_point_down = _create_touch_point(row, cur_idx, row['high'])
+                                        # Only swap if prev_row has different status than the original first touch
+                                        if prev_row['status'] != first_d['status']:
+                                            state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
+                                            if (cur_idx > prev_idx and
+                                                row['status'] != prev_row['status'] and
+                                                row['high'] >= (thr_705_bc - eps_bc)):
+                                                log(f'SWAP-BACKCHECK Second touch 705 (bearish) -> first={prev_row.name} second={row.name}', color='green')
+                                                state.true_position = True
+                                                state.last_second_touch_705_point_down = _create_touch_point(row, cur_idx, row['high'])
                         except Exception:
                             pass
                     if len(legs) == 2:
