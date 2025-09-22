@@ -63,7 +63,10 @@ def main():
     print("-" * 50)
 
     # --- Contextual logging wrapper: prefix logs with file:function:line ---
-    def _log_ctx(message: str, color: str | None = None, save_to_file: bool = True):
+    # Import original log function with alias to avoid conflict
+    from save_file import log as original_log
+    
+    def log(message: str, color: str | None = None, save_to_file: bool = True):
         try:
             frame = inspect.currentframe()
             # Walk back to the caller outside this wrapper
@@ -74,15 +77,10 @@ def main():
             funcname = getattr(func, 'co_name', None) if func else None
             base = os.path.basename(fname) if fname else 'unknown'
             prefix = f"[{base}:{funcname}:{lineno}] "
-            return log(prefix + str(message), color=color, save_to_file=save_to_file)
+            return original_log(prefix + str(message), color=color, save_to_file=save_to_file)
         except Exception:
             # Fallback to original log if anything goes wrong
-            return log(message, color=color, save_to_file=save_to_file)
-
-    # Monkey-patch: use contextual logger throughout this function
-    global log  # type: ignore
-    _orig_log = log  # keep original reference if needed
-    log = _log_ctx  # type: ignore
+            return original_log(message, color=color, save_to_file=save_to_file)
 
     # اضافه کردن متغیر برای ذخیره آخرین داده
     last_data_time = None
