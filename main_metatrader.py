@@ -783,7 +783,7 @@ def main():
                                             log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_up["status"]} cur={row["status"]} low={row["low"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                         except Exception:
                                             pass
-                                elif state.fib_levels and row['low'] <= (state.fib_levels.get('1.0', -float('inf')) + _touch_epsilon_price()):
+                                elif state.fib_levels and '1.0' in state.fib_levels and row['low'] <= (state.fib_levels['1.0'] + _touch_epsilon_price()):
                                     log(f"🔴 Price crossed fib 1.0 (bullish) - resetting to 2 legs", color='magenta')
                                     state.reset()
                                     _clear_touch_state()
@@ -796,6 +796,11 @@ def main():
                             if last_swing_type == 'bearish' or swing_type == 'bearish':
                                 thr_705 = state.fib_levels.get('0.705', -float('inf'))
                                 eps = _touch_epsilon_price()
+                                # Debug: Check fib 1.0 crossing before processing touches
+                                if state.fib_levels and '1.0' in state.fib_levels:
+                                    fib_1_cross = row['high'] >= (state.fib_levels['1.0'] - eps)
+                                    if fib_1_cross:
+                                        log(f'🔍 [SECTION-2] Fib 1.0 cross detected: high={row["high"]:.5f} vs fib1.0-eps={state.fib_levels["1.0"] - eps:.5f}', color='cyan')
                                 # در روند bearish فقط high کندل چک می‌شود (نوع کندل مهم نیست)
                                 high_touch = row['high'] >= (thr_705 - eps)
                                 if high_touch:
@@ -817,7 +822,7 @@ def main():
                                             log(f'705 touched again but same status (no 2nd touch). prev={state.last_touched_705_point_down["status"]} cur={row["status"]} high={row["high"]} thr={thr_705} eps={eps} delta={delta}', color='yellow')
                                         except Exception:
                                             pass
-                                elif state.fib_levels and row['high'] >= (state.fib_levels.get('1.0', float('inf')) - _touch_epsilon_price()):
+                                elif state.fib_levels and '1.0' in state.fib_levels and row['high'] >= (state.fib_levels['1.0'] - _touch_epsilon_price()):
                                     log(f"🔴 Price crossed fib 1.0 (bearish) - resetting to 2 legs", color='magenta')
                                     state.reset()
                                     _clear_touch_state()
