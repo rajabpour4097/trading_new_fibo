@@ -597,7 +597,7 @@ def main():
                                 if low_touch:
                                     current_index = _get_row_index(cache_data, row)
                                     if state.last_touched_705_point_up is None:
-                                        log(f'First touch 705 point code:7318455', color='green')
+                                        log(f'First touch 705 point at {row.name} ({row["status"]}) price={row["low"]} [SECTION-1]', color='green')
                                         state.last_touched_705_point_up = _create_touch_point(row, current_index, row['low'])
                                     elif (row['status'] != state.last_touched_705_point_up['status'] and 
                                           not state.last_second_touch_705_point_up):
@@ -614,7 +614,7 @@ def main():
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['low'] <= (state.fib_levels['1.0'] + _touch_epsilon_price()):
-                                    log(f"🔴 Price crossed fib 1.0 (bullish) - resetting to 2 legs", color='magenta')
+                                    log(f"🔴 Price crossed fib 1.0 (bullish) - resetting to 2 legs | low={row['low']} vs fib1.0={state.fib_levels['1.0']} eps={_touch_epsilon_price()}", color='magenta')
                                     state.reset()
                                     _clear_touch_state()
                                     # بازگشت به 2 لگ آخر برای انتظار تشکیل لگ سوم
@@ -631,7 +631,7 @@ def main():
                                 if high_touch:
                                     current_index = _get_row_index(cache_data, row)
                                     if state.last_touched_705_point_down is None:
-                                        log(f'First touch 705 point code:6328455', color='red')
+                                        log(f'First touch 705 point at {row.name} ({row["status"]}) price={row["high"]} [SECTION-1B]', color='red')
                                         state.last_touched_705_point_down = _create_touch_point(row, current_index, row['high'])
                                     elif (row['status'] != state.last_touched_705_point_down['status'] and 
                                           not state.last_second_touch_705_point_down):
@@ -648,7 +648,7 @@ def main():
                                         except Exception:
                                             pass
                                 elif state.fib_levels and row['high'] >= (state.fib_levels['1.0'] - _touch_epsilon_price()):
-                                    log(f"🔴 Price crossed fib 1.0 (bearish) - resetting to 2 legs", color='magenta')
+                                    log(f"🔴 Price crossed fib 1.0 (bearish) - resetting to 2 legs | high={row['high']} vs fib1.0={state.fib_levels['1.0']} eps={_touch_epsilon_price()}", color='magenta')
                                     state.reset()
                                     _clear_touch_state()
                                     # بازگشت به 2 لگ آخر برای انتظار تشکیل لگ سوم
@@ -681,6 +681,7 @@ def main():
                                         elif prev_row['low'] <= (thr_705_bc + eps_bc):
                                             # Only swap if prev_row has different status than the original first touch
                                             if prev_row['status'] != first['status']:
+                                                log(f'SWAP-BACKCHECK: prev_row {prev_row.name} ({prev_row["status"]}) becomes NEW first touch', color='yellow')
                                                 state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
                                                 if (cur_idx > prev_idx and
                                                     row['status'] != first['status'] and
@@ -704,6 +705,7 @@ def main():
                                         elif prev_row['high'] >= (thr_705_bc - eps_bc):
                                             # Only swap if prev_row has different status than the original first touch
                                             if prev_row['status'] != first_d['status']:
+                                                log(f'SWAP-BACKCHECK: prev_row {prev_row.name} ({prev_row["status"]}) becomes NEW first touch', color='yellow')
                                                 state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
                                                 if (cur_idx > prev_idx and
                                                     row['status'] != first_d['status'] and
@@ -765,7 +767,7 @@ def main():
                                 if low_touch:
                                     current_index = _get_row_index(cache_data, row)
                                     if state.last_touched_705_point_up is None:
-                                        log(f'First touch 705 point at {row.name} price={row["low"]}', color='green')
+                                        log(f'First touch 705 point at {row.name} ({row["status"]}) price={row["low"]} [SECTION-3]', color='green')
                                         state.last_touched_705_point_up = _create_touch_point(row, current_index, row['low'])
                                         # first_touch_index removed; tracked in touch dict
                                     elif (row['status'] != state.last_touched_705_point_up['status'] and 
@@ -799,7 +801,7 @@ def main():
                                 if high_touch:
                                     current_index = _get_row_index(cache_data, row)
                                     if state.last_touched_705_point_down is None:
-                                        log(f'First touch 705 point code:6328455', color='red')
+                                        log(f'First touch 705 point at {row.name} ({row["status"]}) price={row["high"]} [SECTION-2]', color='red')
                                         state.last_touched_705_point_down = _create_touch_point(row, current_index, row['high'])
                                         # first_touch_index_down removed; tracked in touch dict
                                     elif (row['status'] != state.last_touched_705_point_down['status'] and 
@@ -847,6 +849,7 @@ def main():
                                         elif prev_row['low'] <= (thr_705_bc + eps_bc):
                                             # Only swap if prev_row has different status than the original first touch
                                             if prev_row['status'] != first['status']:
+                                                log(f'SWAP-BACKCHECK: prev_row {prev_row.name} ({prev_row["status"]}) becomes NEW first touch', color='yellow')
                                                 state.last_touched_705_point_up = _create_touch_point(prev_row, prev_idx, prev_row['low'])
                                                 if (cur_idx > prev_idx and
                                                     row['status'] != first['status'] and
@@ -868,6 +871,7 @@ def main():
                                         elif prev_row['high'] >= (thr_705_bc - eps_bc):
                                             # Only swap if prev_row has different status than the original first touch
                                             if prev_row['status'] != first_d['status']:
+                                                log(f'SWAP-BACKCHECK: prev_row {prev_row.name} ({prev_row["status"]}) becomes NEW first touch', color='yellow')
                                                 state.last_touched_705_point_down = _create_touch_point(prev_row, prev_idx, prev_row['high'])
                                                 if (cur_idx > prev_idx and
                                                     row['status'] != first_d['status'] and
@@ -915,7 +919,7 @@ def main():
                             low_touch = row['low'] <= (thr_705 + eps)
                             if high_touch:
                                 if state.last_touched_705_point_down is None:
-                                    log(f'First touch 705 point', color='red')
+                                    log(f'First touch 705 point at {row.name} ({row["status"]}) price={row["high"]} [MAIN-CODE]', color='red')
                                     current_index = _get_row_index(cache_data, row)
                                     state.last_touched_705_point_down = _create_touch_point(row, current_index, row['high'])
                                     # first_touch_index_down removed; tracked in touch dict
@@ -924,7 +928,7 @@ def main():
                                     # هر کندل بعد از first با وضعیت مخالف و لمس سمت درست => second touch
                                     current_index = _get_row_index(cache_data, row)
                                     if current_index > state.last_touched_705_point_down['idx']:
-                                        log(f'Second touch 705 point code:5128455 {row.name}', color='green')
+                                        log(f'Second touch 705 point at {row.name} ({row["status"]}) vs first {state.last_touched_705_point_down["time"]} ({state.last_touched_705_point_down["status"]}) [MAIN-CODE]', color='green')
                                         state.true_position = True
                                         state.last_second_touch_705_point_down = _create_touch_point(row, current_index, row['high'])
                                 else:
