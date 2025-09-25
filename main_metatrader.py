@@ -540,6 +540,7 @@ def main():
                         # فاز 2: در swing مشابه - آپدیت 0.0 در صورت ثبت سقف/کف جدید + لاجیک لمس‌ها
                         elif is_swing and state.fib_levels and last_swing_type == swing_type:
                             log(f'is_swing and state.fib_levels and last_swing_type == swing_type code:4213312', color='yellow')
+                            log(f'DEBUG: is_swing={is_swing}, fib_levels={state.fib_levels is not None}, last_swing_type={last_swing_type}, swing_type={swing_type}', color='cyan')
                             row = cache_data.iloc[-1]
                             # اگر سوئینگ همان جهت است اما ساختار سوئینگ جدید شده باشد (signature متفاوت)، فیبو را از نو بساز
                             try:
@@ -573,6 +574,10 @@ def main():
                             # برای آپدیت 0.0 از لنگر قفل‌شدهٔ 1.0 استفاده می‌کنیم (نه leg1 فعلی)
                             end_price_ref = state.fib1_price
                             # بروزرسانی 0.0 با سقف/کف جدید
+                            old_fib_0 = state.fib_levels['0.0'] if state.fib_levels else None
+                            current_extreme = row['high'] if swing_type == 'bullish' else row['low']
+                            log(f"Fib update check: {swing_type} | current_{swing_type[0]}={current_extreme:.5f} vs fib0={old_fib_0:.5f} | time={row.name}", color='lightyellow_ex')
+                            
                             new_fib = _update_fib0_if_extends(swing_type, state.fib_levels, row, end_price_ref)
                             if new_fib is not state.fib_levels:
                                 state.fib_levels = new_fib
@@ -587,7 +592,39 @@ def main():
                                 legs = legs[-2:]
                                 # Count only extensions within the same swing
                                 f += 1
-                                log(f'Fib 0.0 updated (extend) at {row.name}', color='green')
+                                new_fib_0 = new_fib['0.0']
+                                log(f'Fib 0.0 updated (extend): {old_fib_0:.5f} -> {new_fib_0:.5f} at {row.name}', color='green')
+                            else:
+                                log(f'Fib 0.0 no update needed at {row.name}', color='yellow')
+
+                        # فاز 3: فیبو موجود است اما swing جدید نیست - فقط آپدیت فیبو 0.0
+                        elif not is_swing and state.fib_levels and last_swing_type:
+                            log(f'no swing but fib exists - check for fib 0.0 update', color='cyan')
+                            row = cache_data.iloc[-1]
+                            # استفاده از last_swing_type برای تعیین جهت آپدیت
+                            end_price_ref = state.fib1_price
+                            old_fib_0 = state.fib_levels['0.0'] if state.fib_levels else None
+                            current_extreme = row['high'] if last_swing_type == 'bullish' else row['low']
+                            log(f"Fib update check (no swing): {last_swing_type} | current_{last_swing_type[0] if last_swing_type else 'n'}={current_extreme:.5f} vs fib0={old_fib_0:.5f} | time={row.name}", color='lightyellow_ex')
+                            
+                            new_fib = _update_fib0_if_extends(last_swing_type, state.fib_levels, row, end_price_ref)
+                            if new_fib is not state.fib_levels:
+                                state.fib_levels = new_fib
+                                # reset first-touch state on 0.0 update
+                                state.last_touched_705_point_up = None
+                                state.last_touched_705_point_down = None
+                                state.true_position = False
+                                state.fib0_last_update_time = row.name
+                                fib0_point = _get_row_index(cache_data, row)
+                                fib_index = row.name
+                                # Count only extensions within the same swing
+                                f += 1
+                                new_fib_0 = new_fib['0.0']
+                                log(f'Fib 0.0 updated (no swing extend): {old_fib_0:.5f} -> {new_fib_0:.5f} at {row.name}', color='green')
+                            else:
+                                log(f'Fib 0.0 no update needed (no swing) at {row.name}', color='yellow')
+                            # Use the existing swing_type for touch detection
+                            swing_type = last_swing_type
                             # لمس 0.705 و گارد 1.0
                             if swing_type == 'bullish':
                                 thr_705 = state.fib_levels['0.705']
